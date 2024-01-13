@@ -103,3 +103,45 @@ class Colors8Bit(Style):
             raise ValueError("Supplied color is outside the allowed range.")
         # `ESC[38;5` selects 8-bit foreground colour
         self.value = (bright, 38, 5, value)
+
+
+class TerminalMovements(Enum):
+    """
+    Enumeration of ANSI Terminal movement control sequences
+    """
+
+    UP = "A"
+    DOWN = "B"
+    FORWARD = "C"
+    BACK = "D"
+    NEXT_LINE = "E"
+    PREV_LINE = "F"
+    TO_COLUMN = "G"
+    TO_POSITION = "H"
+
+    ERASE_LINE = "K"
+
+    def move(self, *amounts):
+        """
+        Returns an ANSI escape code corresponding to the movement given.
+        Use `TerminalMovements` for the direction, and specify amounts 1-indexed, row before column.
+        """
+        display_attrs = ";".join(map(str, (*amounts, self.value)))
+        return f"\x1b[{display_attrs}"
+
+
+class CursorPosition(Style):
+    """
+    ANSI Terminal cursor positioning using escape sequences.
+    See <https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_(Control_Sequence_Introducer)_sequences>
+    """
+
+    @staticmethod
+    def move(movement: TerminalMovements, *amounts):
+        """
+        Returns an ANSI escape code corresponding to the movement given.
+        Use `TerminalMovements` for the direction, and specify amounts 1-indexed, row before column.
+        """
+        # return Style.escape_code_from_attrs(";".join(map(str, (*amounts, movement.value))))
+        display_attrs = ";".join(map(str, (*amounts, movement.value)))
+        return f"\x1b[{display_attrs}"
