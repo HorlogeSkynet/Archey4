@@ -4,9 +4,8 @@ import os
 import tempfile
 import unittest
 from subprocess import CalledProcessError
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
-from archey.configuration import DEFAULT_CONFIG
 from archey.entries.temperature import Temperature
 from archey.test import CustomAssertions
 from archey.test.entries import HelperMethods
@@ -334,16 +333,9 @@ class TestTemperatureEntry(unittest.TestCase, CustomAssertions):
 
     @HelperMethods.patch_clean_configuration
     def test_output(self):
-        """Test `output` method"""
-        output_mock = MagicMock()
-
-        # No value --> not detected.
-        Temperature.output(self.temperature_mock, output_mock)
-        self.assertEqual(
-            output_mock.append.call_args[0][1], DEFAULT_CONFIG["default_strings"]["not_detected"]
-        )
-
-        output_mock.reset_mock()
+        """Test output values"""
+        # No value --> `None`.
+        self.assertIsNone(self.temperature_mock.value)
 
         # Values --> normal behavior.
         self.temperature_mock._temps = [50.0, 40.0, 50.0]  # pylint: disable=protected-access
@@ -353,8 +345,10 @@ class TestTemperatureEntry(unittest.TestCase, CustomAssertions):
             "char_before_unit": "o",
             "unit": "C",
         }
-        Temperature.output(self.temperature_mock, output_mock)
-        self.assertEqual(output_mock.append.call_args[0][1], "46.7oC (Max. 50.0oC)")
+        self.assertEqual(
+            str(self.temperature_mock),
+            "46.7oC (Max. 50.0oC)",
+        )
 
         # Only one value --> no maximum.
         self.temperature_mock._temps = [42.8]  # pylint: disable=protected-access
@@ -364,8 +358,7 @@ class TestTemperatureEntry(unittest.TestCase, CustomAssertions):
             "char_before_unit": " ",
             "unit": "C",
         }
-        Temperature.output(self.temperature_mock, output_mock)
-        self.assertEqual(output_mock.append.call_args[0][1], "42.8 C")
+        self.assertEqual(str(self.temperature_mock), "42.8 C")
 
     def test_convert_to_fahrenheit(self):
         """Simple tests for the `_convert_to_fahrenheit` static method"""

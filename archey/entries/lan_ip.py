@@ -2,7 +2,7 @@
 
 import ipaddress
 from itertools import islice
-from typing import Iterator
+from typing import Iterator, TypeVar
 
 try:
     import netifaces
@@ -10,6 +10,8 @@ except ImportError:
     netifaces = None
 
 from archey.entry import Entry
+
+Self = TypeVar("Self", bound="LanIP")
 
 
 class LanIP(Entry):
@@ -75,23 +77,17 @@ class LanIP(Entry):
                         # Finally, yield the address compressed representation.
                         yield ip_addr.compressed
 
-    def output(self, output) -> None:
-        """Adds the entry to `output` after pretty-formatting the IP address list."""
-        # If we found IP addresses, join them together nicely.
-        # If not, fall back on default strings according to `netifaces` availability.
-        if self.value:
-            if not self.options.get("one_line", True):
-                # One-line output has been disabled, add one IP address per item.
-                for ip_address in self.value:
-                    output.append(self.name, ip_address)
-
-                return
-
-            text_output = ", ".join(self.value)
-
-        elif netifaces:
-            text_output = self._default_strings.get("no_address")
+    def __iter__(self: Self) -> Self:
+        """Sets up iterable over IP addresses"""
+        if not self.value and netifaces:
+            # If no IP addresses found, fall-back on the "No address" string.
+            self._iter_value = iter([self._default_strings.get("no_address")])
+        elif not self.value:
+            self._iter_value = iter([])
         else:
-            text_output = self._default_strings.get("not_detected")
+            self._iter_value = iter(self.value)
+        return self
 
-        output.append(self.name, text_output)
+    def __next__(self) -> Entry.ValueType:
+        """Yield IP addresses."""
+        return (self.name, str(next(self._iter_value)))

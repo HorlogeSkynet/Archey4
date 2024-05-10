@@ -1,9 +1,8 @@
 """Test module for Archey's GPU detection module"""
 
 import unittest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import patch
 
-from archey.configuration import DEFAULT_CONFIG
 from archey.entries.gpu import GPU
 from archey.test import CustomAssertions
 from archey.test.entries import HelperMethods
@@ -176,9 +175,8 @@ vgapci0@pci0:16:0:0:  class=0x030000 card=0x3381103c chip=0x0533102b rev=0x00 hd
 
     @HelperMethods.patch_clean_configuration
     def test_various_output_configuration(self):
-        """Test `output` overloading based on user preferences"""
+        """Test `__iter__` and `__next__` output overloading based on user preferences"""
         gpu_instance_mock = HelperMethods.entry_mock(GPU)
-        output_mock = MagicMock()
 
         gpu_instance_mock.value = [
             "3D GPU-MODEL-NAME TAKES ADVANTAGE",
@@ -186,37 +184,21 @@ vgapci0@pci0:16:0:0:  class=0x030000 card=0x3381103c chip=0x0533102b rev=0x00 hd
             "ANOTHER-MATCHING-VIDEO",
         ]
 
-        with self.subTest("Single-line combined output."):
-            gpu_instance_mock.options["one_line"] = True
-
-            GPU.output(gpu_instance_mock, output_mock)
-            output_mock.append.assert_called_once_with(
-                "GPU", "3D GPU-MODEL-NAME TAKES ADVANTAGE, GPU-MODEL-NAME, ANOTHER-MATCHING-VIDEO"
-            )
-
-        output_mock.reset_mock()
-
-        with self.subTest("Multi-lines output."):
-            gpu_instance_mock.options["one_line"] = False
-
-            GPU.output(gpu_instance_mock, output_mock)
-            self.assertEqual(output_mock.append.call_count, 3)
-            output_mock.append.assert_has_calls(
+        with self.subTest("Normal output."):
+            self.assertListEqual(
+                list(gpu_instance_mock),
                 [
-                    call("GPU", "3D GPU-MODEL-NAME TAKES ADVANTAGE"),
-                    call("GPU", "GPU-MODEL-NAME"),
-                    call("GPU", "ANOTHER-MATCHING-VIDEO"),
-                ]
+                    ("GPU", "3D GPU-MODEL-NAME TAKES ADVANTAGE"),
+                    ("GPU", "GPU-MODEL-NAME"),
+                    ("GPU", "ANOTHER-MATCHING-VIDEO"),
+                ],
             )
-
-        output_mock.reset_mock()
 
         with self.subTest("No GPU detected output."):
             gpu_instance_mock.value = []
-
-            GPU.output(gpu_instance_mock, output_mock)
-            output_mock.append.assert_called_once_with(
-                "GPU", DEFAULT_CONFIG["default_strings"]["not_detected"]
+            self.assertListEqual(
+                list(gpu_instance_mock),
+                [],
             )
 
 

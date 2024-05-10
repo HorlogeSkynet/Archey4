@@ -2,12 +2,14 @@
 
 from socket import timeout as SocketTimeoutError
 from subprocess import DEVNULL, CalledProcessError, TimeoutExpired, check_output
-from typing import Optional
+from typing import Optional, TypeVar
 from urllib.error import URLError
 from urllib.request import urlopen
 
 from archey.entry import Entry
 from archey.environment import Environment
+
+Self = TypeVar("Self", bound="WanIP")
 
 
 class WanIP(Entry):
@@ -97,23 +99,15 @@ class WanIP(Entry):
         except (URLError, SocketTimeoutError):
             return None
 
-    def output(self, output) -> None:
-        """Adds the entry to `output` after pretty-formatting our list of IP addresses."""
-        # If we found IP addresses, join them together nicely.
-        # If not, fall-back on the "No address" string.
-        if self.value:
-            if not self.options.get("one_line", True):
-                # One-line output has been disabled, add one IP address per item.
-                for ip_address in self.value:
-                    output.append(self.name, ip_address)
-
-                return
-
-            text_output = ", ".join(self.value)
-
-        elif not Environment.DO_NOT_TRACK:
-            text_output = self._default_strings.get("no_address")
+    def __iter__(self: Self) -> Self:
+        """Sets up iterable over IP addresses"""
+        if not self.value and not Environment.DO_NOT_TRACK:
+            # If no IP addresses found, fall-back on the "No address" string.
+            self._iter_value = iter([self._default_strings.get("no_address")])
         else:
-            text_output = self._default_strings.get("not_detected")
+            self._iter_value = iter(self.value)
+        return self
 
-        output.append(self.name, text_output)
+    def __next__(self) -> Entry.ValueType:
+        """Yield IP addresses."""
+        return (self.name, str(next(self._iter_value)))

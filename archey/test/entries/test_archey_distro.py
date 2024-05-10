@@ -1,11 +1,9 @@
 """Test module for Archey's distribution detection module"""
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-from archey.configuration import DEFAULT_CONFIG
 from archey.entries.distro import Distro
-from archey.test.entries import HelperMethods
 
 
 class TestDistroEntry(unittest.TestCase):
@@ -42,23 +40,6 @@ class TestDistroEntry(unittest.TestCase):
         self.assertEqual(
             Distro._fetch_darwin_release(),  # pylint: disable=protected-access
             "macOS 11.1",
-        )
-
-    @HelperMethods.patch_clean_configuration
-    def test_unknown_distro_output(self):
-        """Test for `output` method when distribution name couldn't be found"""
-        distro_intance_mock = HelperMethods.entry_mock(Distro)
-        output_mock = MagicMock()
-
-        distro_intance_mock.value = {
-            "name": None,
-            "arch": "ARCHITECTURE",
-        }
-
-        Distro.output(distro_intance_mock, output_mock)
-        self.assertEqual(
-            output_mock.append.call_args[0][1],
-            f"{DEFAULT_CONFIG['default_strings']['not_detected']} ARCHITECTURE",
         )
 
 

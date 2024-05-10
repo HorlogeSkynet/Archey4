@@ -186,25 +186,11 @@ class CPU(Entry):
         model_name, nb_cores = sysctl_output.splitlines()
         return [{model_name: int(nb_cores)}]
 
-    def output(self, output) -> None:
-        """Writes CPUs to `output` based on preferences"""
-        # No CPU could be detected.
-        if not self.value:
-            output.append(self.name, self._default_strings.get("not_detected"))
-            return
+    def __next__(self) -> Entry.ValueType:
+        """Yield nicely-formatted CPU values"""
+        cpu = next(self._iter_value)
 
-        entries = []
-        for cpus in self.value:
-            for model_name, cpu_count in cpus.items():
-                if cpu_count > 1 and self.options.get("show_cores", True):
-                    entries.append(f"{cpu_count} x {model_name}")
-                else:
-                    entries.append(model_name)
-
-        if self.options.get("one_line"):
-            # One-line output is enabled : Join the results !
-            output.append(self.name, ", ".join(entries))
-        else:
-            # One-line output has been disabled, add one entry per item.
-            for entry in entries:
-                output.append(self.name, entry)
+        model_name, cpu_count = next(iter(cpu.items()))  # This dict only ever has one entry
+        if cpu_count > 1 and self.options.get("show_cores", True):
+            return (self.name, f"{cpu_count} x {model_name}")
+        return (self.name, model_name)

@@ -1,10 +1,9 @@
 """Test module for Archey's RAM usage detection module"""
 
 import unittest
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 from archey.colors import Colors
-from archey.configuration import DEFAULT_CONFIG
 from archey.entries.ram import RAM
 from archey.test.entries import HelperMethods
 
@@ -129,18 +128,11 @@ Swapouts:                               3456015.
 
     @HelperMethods.patch_clean_configuration
     def test_various_output_configuration(self):
-        """Test `output` overloading based on user preferences"""
+        """Test output overloading based on user preferences"""
         ram_instance_mock = HelperMethods.entry_mock(RAM)
-        output_mock = MagicMock()
 
-        with self.subTest("Output in case of non-detection."):
-            RAM.output(ram_instance_mock, output_mock)
-            self.assertEqual(
-                output_mock.append.call_args[0][1],
-                DEFAULT_CONFIG["default_strings"]["not_detected"],
-            )
-
-        output_mock.reset_mock()
+        with self.subTest("In case of non-detection."):
+            self.assertIsNone(ram_instance_mock.value)
 
         with self.subTest('"Normal" output (green).'):
             ram_instance_mock.value = {
@@ -152,14 +144,10 @@ Swapouts:                               3456015.
                 "warning_use_percent": 33.3,
                 "danger_use_percent": 66.7,
             }
-
-            RAM.output(ram_instance_mock, output_mock)
             self.assertEqual(
-                output_mock.append.call_args[0][1],
+                str(ram_instance_mock),
                 f"{Colors.GREEN_NORMAL}2043 MiB{Colors.CLEAR} / 15658 MiB",
             )
-
-        output_mock.reset_mock()
 
         with self.subTest('"Danger" output (red).'):
             ram_instance_mock.value = {
@@ -171,10 +159,8 @@ Swapouts:                               3456015.
                 "warning_use_percent": 25,
                 "danger_use_percent": 50,
             }
-
-            RAM.output(ram_instance_mock, output_mock)
             self.assertEqual(
-                output_mock.append.call_args[0][1],
+                str(ram_instance_mock),
                 f"{Colors.RED_NORMAL}7830 MiB{Colors.CLEAR} / 15658 MiB",
             )
 
